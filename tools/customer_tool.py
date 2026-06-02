@@ -40,4 +40,36 @@ def create_customer(name:str , email:str , phone:str , address:str = "not provid
 
 
 @tool 
-def 
+def get_customer(customer_id :int = None , email:str=None) -> str: 
+    """retreive customer through cusotmer id or email. provide at least one.
+    Args: 
+        customer_id: customer ID number 
+        email: customer email address."""
+
+    session = SessionLocal() 
+    try: 
+        if customer_id:
+            customer = session.query(Customer).filter(Customer.id==customer_id).first()
+        elif email: 
+            customer = session.query(Customer).filter(Customer.email==email).first()
+        else: 
+            return "❌ Provide either customer_id or email to search."
+
+        if not customer:
+            return "❌ Customer not found."
+        
+        return  (
+            f"👤 Customer Found:\n"
+            f"   ID: {customer.id}\n"
+            f"   Name: {customer.name}\n"
+            f"   Email: {customer.email}\n"
+            f"   Phone: {customer.phone}\n"
+            f"   Address: {customer.address or 'N/A'}\n"
+            f"   Joined: {customer.created_at.strftime('%Y-%m-%d')}"
+        )
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+    finally:
+        session.close()
+
+
