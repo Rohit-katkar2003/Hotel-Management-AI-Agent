@@ -6,7 +6,7 @@ from datetime import date
 
 
 @tool 
-def search_availabel_rooms(room_type:str =None , check_in:str=None,
+def search_available_rooms(room_type:str =None , check_in:str=None,
                            check_out:str=None , guests:int=None)-> str: 
     """search availabel rooms. Optionally filter by type , date range and guest count 
     Args: 
@@ -68,7 +68,7 @@ def search_availabel_rooms(room_type:str =None , check_in:str=None,
     
 
 @tool 
-def get_rooms_details(room_number:str , room_id:int) -> str: 
+def get_room_details(room_number:str , room_id:int) -> str: 
 
     """get detailed information about the specific room. 
     Args: 

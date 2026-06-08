@@ -5,7 +5,7 @@ from langchain_core.tools import tool
 
 
 @tool 
-def create_customer(name:str , email:str , phone:str , address:str = "not provided") -> str:   
+def add_customer(name:str , email:str , phone:str , address:str = "not provided") -> str:   
     """add the customer to hotel system.
     Args: 
      name: name of customer. 
@@ -161,7 +161,7 @@ def delete_customer(customer_id:int=None , confirmed:bool=False)->str:
 
 
 @tool 
-def list_customer(search:str)->str: 
+def list_customers(search:str)->str: 
     """list all the customer or search name/email
     args: 
         search : Optional search term to filter by name or email.""" 
