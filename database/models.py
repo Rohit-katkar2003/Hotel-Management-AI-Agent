@@ -30,7 +30,6 @@ class Room(Base):
     bookings = relationship("Booking", back_populates="room")  
 
 class Booking(Base): 
-
     __tablename__ = "bookings" 
 
     id = Column(Integer, primary_key=True, autoincrement=True)
