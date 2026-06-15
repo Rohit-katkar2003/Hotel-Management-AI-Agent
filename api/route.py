@@ -1,9 +1,10 @@
 from fastapi import APIRouter , Query , HTTPException 
 from schemas import  (ChatRequest , ChatResponse ,
                      CustomerResponse  , CustomerCreate ,
-                     CustomerUpdate , RoomResponse)
+                     CustomerUpdate , RoomResponse , BookingCreate , BookingResponse , 
+                     PaymentResponse , PaymentRequest)
 from graph import graph 
-from database import SessionLocal , Customer  , Room , Booking
+from database import SessionLocal , Customer  , Room , Booking , Payment
 from langchain_core.messages import AIMessage , HumanMessage
 import uuid ,json 
 
@@ -313,4 +314,270 @@ def update_room_price_api(room_id: int, new_price: float = Query(..., gt=0)):
 
 ## Booking 
 
+@router.post("/bookings", response_model=BookingResponse)
+def create_booking(data: BookingCreate):
+    """Create a new booking via REST API."""
+    session = SessionLocal()
+    try:
+        customer = session.query(Customer).filter(Customer.id == data.customer_id).first()
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
+
+        room = session.query(Room).filter(Room.id == data.room_id).first()
+        if not room:
+            raise HTTPException(status_code=404, detail="Room not found")
+
+        if data.check_in >= data.check_out:
+            raise HTTPException(status_code=400, detail="Check-out must be after check-in")
+
+        conflict = session.query(Booking).filter(
+            Booking.room_id == data.room_id,
+            Booking.status.in_(["confirmed", "checked_in"]),
+            Booking.check_in < data.check_out,
+            Booking.check_out > data.check_in
+        ).first()
+        if conflict:
+            raise HTTPException(status_code=409, detail="Room is booked for those dates")
+
+        nights = (data.check_out - data.check_in).days
+        total = nights * room.price_per_night
+
+        booking = Booking(
+            customer_id=data.customer_id, room_id=data.room_id,
+            check_in=data.check_in, check_out=data.check_out,
+            status="confirmed", total_amount=total
+        )
+        session.add(booking)
+        room.status = "occupied"
+        session.commit()
+        session.refresh(booking)
+        return booking
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+@router.get("/bookings", response_model=list[BookingResponse])
+def get_bookings(
+    customer_id: int = Query(None),
+    status: str = Query(None)
+):
+    """List bookings with optional filters."""
+    session = SessionLocal()
+    try:
+        query = session.query(Booking)
+        if customer_id:
+            query = query.filter(Booking.customer_id == customer_id)
+        if status:
+            query = query.filter(Booking.status == status.lower())
+        return query.order_by(Booking.id.desc()).limit(50).all()
+    finally:
+        session.close()
+
+
+@router.get("/bookings/{booking_id}", response_model=BookingResponse)
+def get_booking(booking_id: int):
+    """Get booking details."""
+    session = SessionLocal()
+    try:
+        booking = session.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        return booking
+    finally:
+        session.close()
+
+
+@router.patch("/bookings/{booking_id}/cancel")
+def cancel_booking_api(booking_id: int):
+    """Cancel a booking."""
+    session = SessionLocal()
+    try:
+        booking = session.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        if booking.status in ("checked_out", "cancelled"):
+            raise HTTPException(status_code=400, detail=f"Booking already {booking.status}")
+
+        booking.status = "cancelled"
+        booking.room.status = "available"
+        session.commit()
+        return {"message": f"Booking {booking_id} cancelled", "room_freed": booking.room.room_number}
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+@router.patch("/bookings/{booking_id}/checkin")
+def check_in_api(booking_id: int):
+    """Check in a guest."""
+    session = SessionLocal()
+    try:
+        booking = session.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        if booking.status != "confirmed":
+            raise HTTPException(status_code=400, detail=f"Cannot check in — status is '{booking.status}'")
+
+        booking.status = "checked_in"
+        booking.room.status = "occupied"
+        session.commit()
+        return {"message": f"Guest checked in", "room": booking.room.room_number}
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+@router.patch("/bookings/{booking_id}/checkout")
+def check_out_api(booking_id: int):
+    """Check out a guest."""
+    session = SessionLocal()
+    try:
+        booking = session.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        if booking.status != "checked_in":
+            raise HTTPException(status_code=400, detail=f"Cannot check out — status is '{booking.status}'")
+
+        total_paid = sum(p.amount for p in booking.payments if p.status == "completed")
+        balance = booking.total_amount - total_paid
+
+        booking.status = "checked_out"
+        booking.room.status = "available"
+        session.commit()
+        return {
+            "message": f"Guest checked out",
+            "room_freed": booking.room.room_number,
+            "total": booking.total_amount,
+            "paid": total_paid,
+            "balance": balance
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+
+# ═══════════════════════════════════════════
+# BILLING / PAYMENT ENDPOINTS
+# ═══════════════════════════════════════════
+
+@router.get("/bookings/{booking_id}/bill")
+def get_bill_api(booking_id: int):
+    """Get bill details for a booking."""
+    session = SessionLocal()
+    try:
+        booking = session.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+
+        nights = (booking.check_out - booking.check_in).days
+        total_paid = sum(p.amount for p in booking.payments if p.status == "completed")
+
+        return {
+            "booking_id": booking.id,
+            "guest": booking.customer.name,
+            "room": booking.room.room_number,
+            "room_type": booking.room.room_type,
+            "check_in": str(booking.check_in),
+            "check_out": str(booking.check_out),
+            "nights": nights,
+            "price_per_night": booking.room.price_per_night,
+            "room_charges": nights * booking.room.price_per_night,
+            "total": booking.total_amount,
+            "paid": total_paid,
+            "balance": booking.total_amount - total_paid,
+            "status": booking.status
+        }
+    finally:
+        session.close()
+
+
+@router.post("/payments", response_model=PaymentResponse)
+def make_payment(data: PaymentRequest):
+    """Process a payment for a booking."""
+    session = SessionLocal()
+    try:
+        if data.method.lower() not in ("cash", "card", "upi"):
+            raise HTTPException(status_code=400, detail="Method must be cash, card, or upi")
+
+        booking = session.query(Booking).filter(Booking.id == data.booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+
+        total_paid = sum(p.amount for p in booking.payments if p.status == "completed")
+        balance = booking.total_amount - total_paid
+
+        if balance <= 0:
+            raise HTTPException(status_code=400, detail="Booking is already fully paid")
+        if data.amount > balance:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Amount ${data.amount} exceeds balance ${balance:.2f}"
+            )
+
+        payment = Payment(
+            booking_id=data.booking_id,
+            amount=data.amount,
+            method=data.method.lower(),
+            status="completed"
+        )
+        session.add(payment)
+        session.commit()
+        session.refresh(payment)
+        return payment
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+# ═══════════════════════════════════════════
+# DASHBOARD / STATS
+# ═══════════════════════════════════════════
+
+@router.get("/stats")
+def get_stats():
+    """Get hotel dashboard statistics."""
+    session = SessionLocal()
+    try:
+        total_customers = session.query(Customer).count()
+        total_rooms = session.query(Room).count()
+        available_rooms = session.query(Room).filter(Room.status == "available").count()
+        occupied_rooms = session.query(Room).filter(Room.status == "occupied").count()
+        active_bookings = session.query(Booking).filter(
+            Booking.status.in_(["confirmed", "checked_in"])
+        ).count()
+        total_revenue = sum(
+            p.amount for p in session.query(Payment).filter(Payment.status == "completed").all()
+        )
+
+        return {
+            "customers": total_customers,
+            "rooms": {"total": total_rooms, "available": available_rooms, "occupied": occupied_rooms},
+            "active_bookings": active_bookings,
+            "total_revenue": round(total_revenue, 2),
+            "occupancy_rate": round(occupied_rooms / max(total_rooms, 1) * 100, 1)
+        }
+    finally:
+        session.close()
 

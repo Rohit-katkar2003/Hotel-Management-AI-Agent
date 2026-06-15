@@ -61,3 +61,17 @@ class BookingResponse(BaseModel):
     status: str
     total_amount: float
 
+
+# ─── Payment ───
+class PaymentRequest(BaseModel):
+    booking_id: int
+    amount: float
+    method: str = "card"  # cash, card, upi
+
+class PaymentResponse(BaseModel):
+    id: int
+    booking_id: int
+    amount: float
+    method: str
+    status: str
+    paid_at: datetime
