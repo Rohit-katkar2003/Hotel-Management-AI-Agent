@@ -4,7 +4,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 from graph.state import AgentState
 from graph.nodes import agent_node, tool_node, should_continue
-from config import CHECKPOINT_DB_PATH
+from config import settings
 
 
 def build_graph():
@@ -23,7 +23,7 @@ def build_graph():
     builder.add_edge("tools", "agent")  # After tools → back to agent (loop)
 
     # ─── Checkpointer (persists conversation state) ───
-    conn = sqlite3.connect(CHECKPOINT_DB_PATH, check_same_thread=False)
+    conn = sqlite3.connect(settings.CHECKPOINT_DB_PATH, check_same_thread=False)
     checkpointer = SqliteSaver(conn)
     checkpointer.setup()
 
