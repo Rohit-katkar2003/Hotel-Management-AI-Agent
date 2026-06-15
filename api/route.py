@@ -10,25 +10,26 @@ import uuid ,json
 
 
 router = APIRouter()
-
-@router.post("/chat" , response_model=ChatResponse)
+@router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
 
-    thread_id = request.thread_id or str(uuid.uuid4) 
-    config = {"configurable":{" thread_id" : str(thread_id)}}
-    try: 
-        response = graph.invoke({"messages":request.message} ,config) 
+    thread_id = request.thread_id or str(uuid.uuid4())
+    config = {"configurable": {"thread_id": str(thread_id)}}
+    try:
+        response = graph.invoke(
+            {"messages": [HumanMessage(content=request.message)]}, config
+        )
 
-        reply = "" 
-        for msg in reversed(response["messages"]): 
-            if isinstance(msg , AIMessage) and msg.content:  
+        reply = ""
+        for msg in reversed(response["messages"]):
+            if isinstance(msg, AIMessage) and msg.content:
                 reply = msg.content
-                break 
- 
-        return ChatResponse(reply=reply , thread_id=thread_id)
-    
-    except Exception as e: 
-        return f"Got error /chat : {e}" 
+                break
+
+        return ChatResponse(reply=reply, thread_id=thread_id)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Got error /chat : {e}")
 
 @router.post("/chat/stream") 
 def chat_stream(request:ChatRequest): 
@@ -54,7 +55,7 @@ def chat_stream(request:ChatRequest):
                     }) 
                     yield f"data: {data} \n\n" 
         
-        yield f"data: {json.dumps({"type":"done" , "thread_id":thread_id})}\n\n" 
+        yield f"data: {json.dumps({'type':'done' , 'thread_id':thread_id})}\n\n" 
 
     return StreamingResponse(event_generator() , media_type="text/event-stream") 
 

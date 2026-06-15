@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings , SettingsConfigDict 
+from typing import ClassVar 
 import os 
 from dotenv import load_dotenv 
 load_dotenv() 
@@ -15,15 +16,15 @@ class Settings(BaseSettings):
     open_router_base_url : str = "https://openrouter.ai/api/v1" 
 
     # ---- app ----- 
-    APP_NAME = "Hotel Management AI Agent"
-    APP_VERSION = "1.0.0"
+    APP_NAME:str= "Hotel Management AI Agent"
+    APP_VERSION:str = "1.0.0"
 
     # ─── Hotel Defaults ───
-    DEFAULT_CURRENCY = "USD"
-    MAX_BOOKING_DAYS = 30
+    DEFAULT_CURRENCY: ClassVar[str] = "USD"
+    MAX_BOOKING_DAYS: ClassVar[int] = 30
 
-    HOTEL_DB_PATH = os.getenv("HOTEL_DB_PATH", "hotel.db")
-    CHECKPOINT_DB_PATH = os.getenv("CHECKPOINT_DB_PATH", "checkpoints.db")
+    HOTEL_DB_PATH:str = os.getenv("HOTEL_DB_PATH", "hotel.db")
+    CHECKPOINT_DB_PATH:str = os.getenv("CHECKPOINT_DB_PATH", "checkpoints.db")
 
 
     debug:bool = True 
