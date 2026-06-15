@@ -1,9 +1,13 @@
 from fastapi import APIRouter , Query , HTTPException 
-from schemas import  ChatRequest , ChatResponse  
+from schemas import  (ChatRequest , ChatResponse ,
+                     CustomerResponse  , CustomerCreate ,
+                     CustomerUpdate)
 from graph import graph 
-
+from database import SessionLocal , Customer 
 from langchain_core.messages import AIMessage , HumanMessage
-import uuid ,json
+import uuid ,json 
+
+
 router = APIRouter()
 
 @router.post("/chat" , response_model=ChatResponse)
@@ -75,3 +79,46 @@ def get_chat_history(thread_id:str):
         raise HTTPException(status_code=404, detail=f"Thread not found: {str(e)}")
 
  
+## for customers 
+
+
+@router.post("/customers" , response_model=CustomerResponse) 
+def create_customer(data : CustomerCreate):  
+    session = SessionLocal() 
+    try: 
+        existing = session.query(Customer).filter(Customer.email==data.email.lower()).first() 
+        if existing: 
+            raise HTTPException(status_code=400 , detail=f"Email {data.email.lower()} already exist.") 
+        
+        customer = Customer(
+            name = data.name , email=data.email.lower() , 
+            phone=data.phone , address = data.address
+         )
+        session.add(customer)
+        session.commit()
+        session.refresh(customer)
+        return customer
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+@router.get("/customers" , response_model=list[CustomerResponse] )
+def get_customer(search:str = Query(None , description="search by the name and email")): 
+
+    session = SessionLocal() 
+    try: 
+        query = session.query(Customer) 
+        if search : 
+            
+            query = query.filter((Customer.name.ilike(f"%{search}%")) | (Customer.email.ilike(f"%{search}%")))
+        return query.order_by(Customer.id).all()
+
+    except Exception as e: 
+        raise HTTPException(status_code=500  , detail=f"Got error  {e}") 
+    
+    finally: 
+        session.close()
