@@ -8,7 +8,6 @@ from database import SessionLocal , Customer  , Room , Booking , Payment
 from langchain_core.messages import AIMessage , HumanMessage
 import uuid ,json 
 
-
 router = APIRouter()
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
@@ -59,8 +58,7 @@ def chat_stream(request:ChatRequest):
 
     return StreamingResponse(event_generator() , media_type="text/event-stream") 
 
-
-@router.get("chat/history/{thread_id}") 
+@router.get("/chat/history/{thread_id}") 
 def get_chat_history(thread_id:str): 
     """get chat history by thread""" 
     config = {"configurable": {"thread_id":str(thread_id)}} 
@@ -80,10 +78,7 @@ def get_chat_history(thread_id:str):
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Thread not found: {str(e)}")
 
- 
 ## for customers 
-
-
 @router.post("/customers" , response_model=CustomerResponse) 
 def create_customer(data : CustomerCreate):  
     session = SessionLocal() 
@@ -125,7 +120,6 @@ def get_customer(search:str = Query(None , description="search by the name and e
     finally: 
         session.close()
 
-
 @router.get("/customers/{customer_id}", response_model=CustomerResponse)
 def get_customer(customer_id: int):
     """Get a specific customer by ID."""
@@ -137,7 +131,6 @@ def get_customer(customer_id: int):
         return customer
     finally:
         session.close() 
-
 
 @router.put("/customers/{customer_id}", response_model=CustomerResponse)
 def update_customer(customer_id: int, data: CustomerUpdate):
@@ -201,7 +194,6 @@ def delete_customer(customer_id: int):
     finally:
         session.close()
 
-
 ## Room Endpoints 
 @router.get("/rooms" , response_model=list[RoomResponse]) 
 def get_rooms(
@@ -224,7 +216,6 @@ def get_rooms(
         raise HTTPException(status_code=500 , detail=f"Got error {e}") 
     finally: 
         session.close()
-
 
 @router.get("/rooms/available")
 def get_available_rooms(
@@ -274,7 +265,6 @@ def get_available_rooms(
     finally:
         session.close()
 
-
 @router.get("/rooms/{room_id}", response_model=RoomResponse)
 def get_room(room_id: int):
     """Get room details."""
@@ -286,7 +276,6 @@ def get_room(room_id: int):
         return room
     finally:
         session.close()
-
 
 @router.patch("/rooms/{room_id}/price")
 def update_room_price_api(room_id: int, new_price: float = Query(..., gt=0)):
@@ -314,7 +303,6 @@ def update_room_price_api(room_id: int, new_price: float = Query(..., gt=0)):
 
 
 ## Booking 
-
 @router.post("/bookings", response_model=BookingResponse)
 def create_booking(data: BookingCreate):
     """Create a new booking via REST API."""
@@ -416,7 +404,6 @@ def cancel_booking_api(booking_id: int):
     finally:
         session.close()
 
-
 @router.patch("/bookings/{booking_id}/checkin")
 def check_in_api(booking_id: int):
     """Check in a guest."""
@@ -473,8 +460,6 @@ def check_out_api(booking_id: int):
     finally:
         session.close()
 
-
-
 # ═══════════════════════════════════════════
 # BILLING / PAYMENT ENDPOINTS
 # ═══════════════════════════════════════════
@@ -508,7 +493,6 @@ def get_bill_api(booking_id: int):
         }
     finally:
         session.close()
-
 
 @router.post("/payments", response_model=PaymentResponse)
 def make_payment(data: PaymentRequest):
