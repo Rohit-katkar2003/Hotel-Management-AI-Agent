@@ -7,9 +7,11 @@ class ChatRequest(BaseModel):
     message : str 
     thread_id : Optional[str] = None 
 
-class ChatResponse(BaseModel): 
-    reply : str 
-    thread_id : str 
+class ChatResponse(BaseModel):
+    reply: str
+    thread_id: str
+    rooms: list[dict] = []          # ← populated when a room search happened
+    agent: str = "user"
 
     
 ## customer  
@@ -56,10 +58,13 @@ class BookingResponse(BaseModel):
     id: int
     customer_id: int
     room_id: int
+    customer_name: Optional[str] = None
+    room_number: Optional[str] = None
     check_in: date
     check_out: date
     status: str
     total_amount: float
+    model_config = {"from_attributes": True}
 
 
 # ─── Payment ───

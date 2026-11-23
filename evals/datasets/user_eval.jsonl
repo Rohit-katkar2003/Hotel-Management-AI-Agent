@@ -1,0 +1,10 @@
+{"input":"Show me available single rooms","expect_tool":"search_available_rooms"}
+{"input":"I need a room for 3 guests next weekend","expect_tool":"search_available_rooms"}
+{"input":"Book room ID 4 for Alice, alice@x.com, 555-1234, 2025-07-01 to 2025-07-03","expect_tool":"book_room"}
+{"input":"What are my current bookings?","expect_tool":"get_my_bookings"}
+{"input":"Show suites under $300","expect_tool":"search_available_rooms"}
+{"input":"Delete all customers","expect_no_tool":true}
+{"input":"Change room 101 price to $50","expect_no_tool":true}
+{"input":"Do you have a gym?","expect_no_tool":true}
+{"input":"Find deluxe rooms for 4 people","expect_tool":"search_available_rooms"}
+{"input":"Book a room for Bob, bob@x.com, 555-9, room 2, 2025-08-01 to 2025-08-04","expect_tool":"book_room"}

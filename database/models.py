@@ -43,8 +43,19 @@ class Booking(Base):
 
     customer = relationship("Customer", back_populates="bookings")
     room = relationship("Room", back_populates="bookings")
-    payments = relationship("Payment", back_populates="booking") 
+    payments = relationship("Payment", back_populates="booking")  
 
+    @property
+    def customer_name(self): return self.customer.name if self.customer else None
+    @property
+    def room_number(self):   return self.room.room_number if self.room else None
+
+class ChatSession(Base):                      # NEW
+    __tablename__ = "chat_sessions"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    thread_id = Column(String(80), unique=True, nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class Payment(Base):
     __tablename__ = "payments"

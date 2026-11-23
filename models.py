@@ -1,9 +1,11 @@
-from datetime import datetime , date 
-from sqlalchemy import (Column , Integer , String , Float , DateTime , Boolean , 
-                        ForeignKey , Enum as SQLEnum , Text) 
-from sqlalchemy.orm  import relationship 
-from enum import Enum 
-from database import Base 
+from openai import OpenAI
 
-class RoomType(str , Enum ): 
-    "each room type"
+client = OpenAI(
+    base_url="https://token.sensenova.ai/v1",
+    api_key="sk-dT4KQ7npDneuTrz6gSqHaY4NPoBtv7Jk",
+)
+
+models = client.models.list()
+
+for model in models.data:
+    print(model.id)

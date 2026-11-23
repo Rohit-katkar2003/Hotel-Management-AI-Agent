@@ -6,29 +6,49 @@ from schemas import  (ChatRequest , ChatResponse ,
 from graph import graph 
 from database import SessionLocal , Customer  , Room , Booking , Payment
 from langchain_core.messages import AIMessage , HumanMessage
+from agents.user_agent import user_graph
+from agents.admin_agent import admin_graph
 import uuid ,json 
 
 router = APIRouter()
-@router.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest):
 
+
+def _run_graph(graph, request: ChatRequest, agent_name: str) -> ChatResponse:
     thread_id = request.thread_id or str(uuid.uuid4())
-    config = {"configurable": {"thread_id": str(thread_id)}}
-    try:
-        response = graph.invoke(
-            {"messages": [HumanMessage(content=request.message)]}, config
-        )
+    config = {"configurable": {"thread_id": thread_id}}
+    result = graph.invoke(
+        {"messages": [HumanMessage(content=request.message)]}, config
+    )
 
-        reply = ""
-        for msg in reversed(response["messages"]):
-            if isinstance(msg, AIMessage) and msg.content:
-                reply = msg.content
-                break
+    reply, rooms = "", []
+    for msg in result["messages"]:
+        if getattr(msg, "name", None) == "search_available_rooms":
+            try:
+                data = json.loads(msg.content)
+                if isinstance(data, dict) and data.get("rooms"):
+                    rooms = data["rooms"]
+            except Exception:
+                pass
 
-        return ChatResponse(reply=reply, thread_id=thread_id)
+    for msg in reversed(result["messages"]):
+        if isinstance(msg, AIMessage) and msg.content:
+            reply = msg.content; break
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Got error /chat : {e}")
+    return ChatResponse(reply=reply, thread_id=thread_id, rooms=rooms, agent=agent_name)
+
+
+@router.post("/chat/user",  response_model=ChatResponse)
+def chat_user(req: ChatRequest):  
+    return _run_graph(user_graph,  req, "user")
+
+@router.post("/chat/admin", response_model=ChatResponse)
+def chat_admin(req: ChatRequest): 
+    return _run_graph(admin_graph, req, "admin")
+
+@router.post("/chat", response_model=ChatResponse)       # backwards-compat
+def chat(req: ChatRequest):       
+    return _run_graph(user_graph, req, "user")
+
 
 @router.post("/chat/stream") 
 def chat_stream(request:ChatRequest): 

@@ -6,14 +6,15 @@ load_dotenv()
 
 class Settings(BaseSettings): 
 
-    open_router_api:str = os.getenv("ROUTER_API_KEY") 
-    
-    open_router_model : str = "google/gemma-4-31b-it:free" 
+    # ─── Sensnova LLM ─── 
+    sensnova_api_key : str = os.getenv("SENSNOVA_API_KEY") 
+    sensnova_model : str = "sensenova-6.8-flash-lite" 
+    sensnova_base_url : str = "https://token.sensenova.ai/v1" 
+
     llm_temperature:float=0.1 
     llm_max_tokens:int = 1024 
     llm_streaming:bool=False
 
-    open_router_base_url : str = "https://openrouter.ai/api/v1" 
 
     # ---- app ----- 
     APP_NAME:str= "Hotel Management AI Agent"

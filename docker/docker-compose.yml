@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports: ["8000:8000"]
+    env_file: ../.env
+    volumes:
+      - ../hotel.db:/app/hotel.db
+      - ../checkpoints.db:/app/checkpoints.db
+  mcp:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.mcp
+    env_file: ../.env
+    volumes:
+      - ../hotel.db:/app/hotel.db

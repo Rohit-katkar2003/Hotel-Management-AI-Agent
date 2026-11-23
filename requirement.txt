@@ -9,3 +9,4 @@ langchain-openai==0.1.20
 langchain-community==0.2.11
 python-dotenv==1.0.1
 alembic==1.13.2
+mcp>=1.2.0

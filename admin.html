@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Hotel - Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>🏨 Grand Hotel</h1>
+            <p>Admin Dashboard</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#overview" class="nav-item active">📊 Overview</a>
+            <a href="#bookings" class="nav-item">📋 Bookings</a>
+            <a href="#customers" class="nav-item">👤 Customers</a>
+            <a href="#rooms" class="nav-item">🛏️ Rooms</a>
+        </nav>
+        <a href="/" class="back-to-site">← Back to Hotel Site</a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <section id="assistant" class="section">
+            <h2>Ops Copilot</h2>
+            <div class="chat-shell">
+                <div class="chat-messages" id="admin-chat-messages"></div>
+                <form class="chat-form" id="admin-chat-form">
+                <input type="text" id="admin-chat-input" placeholder="e.g. Who is checking out today?" autocomplete="off">
+                <button type="submit">Send</button>
+                </form>
+            </div>
+        </section>
+        <!-- Overview Section -->
+        <section id="overview" class="section active">
+            <h2>Dashboard Overview</h2>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Active Bookings</h3>
+                    <p class="kpi-value" id="kpi-bookings">0</p>
+                    <span class="kpi-trend">↑ Today</span>
+                </div>
+                <div class="kpi-card">
+                    <h3>Total Revenue</h3>
+                    <p class="kpi-value" id="kpi-revenue">$0</p>
+                    <span class="kpi-trend">This month</span>
+                </div>
+                <div class="kpi-card">
+                    <h3>Occupancy Rate</h3>
+                    <p class="kpi-value" id="kpi-occupancy">0%</p>
+                    <span class="kpi-trend">Live</span>
+                </div>
+                <div class="kpi-card">
+                    <h3>Total Customers</h3>
+                    <p class="kpi-value" id="kpi-customers">0</p>
+                    <span class="kpi-trend">All time</span>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Bookings Over Time</h3>
+                    <canvas id="bookings-chart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Revenue by Room Type</h3>
+                    <canvas id="revenue-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bookings Section -->
+        <section id="bookings" class="section">
+            <h2>Bookings Management</h2>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="refreshBookings()">🔄 Refresh</button>
+                <button class="btn btn-secondary" onclick="exportBookings()">📤 Export CSV</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Customer</th>
+                        <th>Room</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="bookings-table-body">
+                    <tr>
+                        <td colspan="8">Loading bookings...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Customers Section -->
+        <section id="customers" class="section">
+            <h2>Customers</h2>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="refreshCustomers()">🔄 Refresh</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Bookings</th>
+                    </tr>
+                </thead>
+                <tbody id="customers-table-body">
+                    <tr>
+                        <td colspan="5">Loading customers...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Rooms Section -->
+        <section id="rooms" class="section">
+            <h2>Rooms</h2>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="refreshRooms()">🔄 Refresh</button>
+            </div>
+            <div class="rooms-grid" id="admin-rooms-container">
+                <div class="room-card">
+                    <p>Loading rooms...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>
